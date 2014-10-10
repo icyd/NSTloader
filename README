@@ -1,0 +1,52 @@
+##########################################################################
+###   TinyLoader - Small bootloader programmed in C and Python         ###
+###                for AVR microcontrollers                            ###
+##########################################################################
+
+This bootloader is based on the AVR109 application note, using UART serial
+protocol communication, to download the programm into the uC.
+
+The communication is done using different frames to send the information.
+First when the uC is resetted it sends a 3 bytes frame which are the
+signature of the device; and it expect a ACK byte (0x06). If the byte is 
+not received in a defined time period (aprox. 1 seg), the bootloader check
+if there is a functional program in the device. If it's, then the program
+starts, otherwise it halts.
+
+When the ACK is received, the bootloader expect 2 possible frames:
+1.- A frame containing data of the new program to be burnt into the device
+(identified by 0x01), followed by a 2 byte (16 bit) that identifies the 
+package number of the data inside the memory of the device, a number of
+bytes corresponding to the SPM PAGE SIZE of the device, and a 16 bit
+CRC to check data integrity.
+2.- The other possible frame (id 0x12) corresponds to a 32 bits data frame
+containing a 16 bits CRC and the a 16 bits one's complement, used to check 
+the integrity of the CRC. This data correspons to the CRC of the complete
+program to be burnt into the device.
+
+The CRC calculation varies in function of the data length, using the best 
+mask for that length. More information avalaible on: http://users.ece.cmu.edu/~koopman/crc/
+
+To Do:
+- Expand the Readme information.
+- Add functionality to the PC tool in Python. (Verify data only)
+- Add GUI to PC tool.
+
+****************************************************************************
+Firmware Copyright (C):
+    2014 - Alberto Vazquez aka IcyD
+
+        This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 2 of the License, or
+    (at your option) any later version.
+
+        This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+        You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+****************************************************************************
