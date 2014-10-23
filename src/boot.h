@@ -14,18 +14,20 @@
 #define F_CPU       8000000UL   //CPU Frequency
 #endif
 #define BAUD        19200UL     // Baud Rate
+#include <util/setbaud.h>
 #define PROGSTART   0x0000UL    //Application start address (bytewise)
 #define BOOTSTART   0x7C00UL    //Bootloader start address (bytewise)
 #define PFLAGADD    E2END       //Address of flag to check the integrity of data in flash
 
 ////Definition of Baud Error Calculation
-#define UBRRVALUE (((F_CPU >> 4) / BAUD) - 1UL)
-#define BAUDERROR (((F_CPU >> 4) / (UBRRVALUE + 1UL) * 100UL) / BAUD)
-#if ((BAUDERROR<98) || (BAUDERROR>102))
-#error "UART error over 2%!"
-#endif
-#define UBRRV_L (UBRRVALUE & 0xFF)
-#define UBRRV_H (UBRRVALUE >> 8)
+//*** Deprecated, replaced with util/setbaud.h
+//#define UBRRVALUE (((F_CPU >> 4) / BAUD) - 1UL)
+//#define BAUDERROR (((F_CPU >> 4) / (UBRRVALUE + 1UL) * 100UL) / BAUD)
+//#if ((BAUDERROR<98) || (BAUDERROR>102))
+//#error "UART error over 2%!"
+//#endif
+#define UBRRV_L (UBRR_VALUE & 0xFF)
+#define UBRRV_H (UBRR_VALUE >> 8)
 
 //Definition of Program Addresses (bytewise)
 #define BUFFSIZE    (SPM_PAGESIZE + 4)
