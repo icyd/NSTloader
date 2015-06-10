@@ -1,139 +1,149 @@
 #include "boot.h"
 
+//main{{{
 void main (void){
-    uint8_t Buffer[BUFFSIZE];
-    uint8_t Boot_On = 0;
-    uint8_t Flash_Mod = 0;
+//Variable definition{{{
+    uint8_t Buffer[BUFFSIZE]={SIGNATURE_0, SIGNATURE_1, SIGNATURE_2};
     uint8_t Tcounter = OVFLW;
+    uint8_t opt;
     uint16_t crc;
-    uint16_t crcflash = 0;
-    uint16_t PagNm = 0; //Bytewise
-    uint16_t j;
     volatile fncptr runapp = (fncptr)0x0000;
+    uint16_t j;
 #if (SPM_PAGESIZE > 255)
     uint16_t i;
 #else
     uint8_t i;
 #endif
+//}}}
 
-/*UART BAUD rate initialization*/
-    UBRRH = UBRRV_H;
-    UBRRL = UBRRV_L;
-    UARTON();
-    uart_tx(SIGNATURE_0);
-    uart_tx(SIGNATURE_1);
-    uart_tx(SIGNATURE_2);
-    TIMER_ON();
+//Registers and device initialization{{{
+    UBRRH = UBRRH_VALUE;
+    UBRRL = UBRRL_VALUE;
+    UART_ENA();
+    send_block(Buffer, 3); //Send signature bytes
+    //Send bootloader version info (not enough space)
+    /*for(i=7;i>0;i--)*/
+        /*uart_tx(pgm_read_byte(BootloaderVersion[7-i]));*/
+    TIM_ENA();
+//}}}
 
-/*Bootloader handshake*/
-    while(Tcounter){
-        if(DataOnRx() && (UDR == ACK)){
-            Boot_On = 0xFF;
-            break;
-        }
-        if(TIMER_OVR()){
+//Bootloader handshake{{{
+    while(Tcounter){ //Wait 1 sec for reply (ACK) of PC
+        if(TIM_OVR()){
             TFLAGRST();
             Tcounter--;
         }
+        if(DATA_RX() && (UDR == ACK)){
+            break;
+        }
     }
-    TIMER_OFF();
-//Begin data reception
-    if(Boot_On){
-        Tcounter = OVFLW;
-        while(Tcounter){
-            if(DataOnRx()){
-                Buffer[0] = UDR;
-                if(Buffer[0] == FRAME_1){
-                    //Populate of buffer
-                    for(i=BUFFSIZE;i>0;i--)
-                        Buffer[BUFFSIZE-i]=uart_rx();
-                    //Check of actual page number
-                    if((Buffer[0] == (uint8_t)(PagNm>>8)) && \
-                            (Buffer[1] == (uint8_t)PagNm)){
-                        crc = crc16_calc(INITVAL, MASKBUFF, (BUFFSIZE-2), Buffer);
-                        if((Buffer[BUFFSIZE-2] != (crc>>8) || \
-                                    (Buffer[BUFFSIZE-1] != (uint8_t)crc)))
-                            uart_tx(NACK);
-                        else {
-                        /*write to FLASH*/
-                            /*Redundacy check !!!*/
-                            if(PagNm < BOOTSTART){
-                                boot_page_erase(PagNm);
-                                boot_spm_busy_wait();
-                                for(i=SPM_PAGESIZE;i>0;i-=2)
-                                    boot_page_fill((SPM_PAGESIZE-i), \
-                                            ((Buffer[SPM_PAGESIZE-i+3]<<8) | \
-                                            Buffer[SPM_PAGESIZE-i+2]));
-                                boot_spm_busy_wait();
-                                boot_page_write(PagNm);
-                                boot_spm_busy_wait();
-                                if(!Flash_Mod){
-                                    Flash_Mod = 0xFF;
-                                    eeprom_update_byte(PFLAGADD, PRGERR);
-                                    eeprom_busy_wait();
-                                }
-                                PagNm += SPM_PAGESIZE;
-                            }
-                        uart_tx(ACK);
-                        }
-                    }
-                    else
-                        uart_tx(NACK);
-                }
-                else if(Buffer[0] == FRAME_2){
-                    Buffer[0] = uart_rx();
-                    Buffer[1] = uart_rx();
-                    Buffer[2] = uart_rx();
-                    Buffer[3] = uart_rx();
-                    /*Check if the CRC receive has errors*/
-                    if(((Buffer[0] ^ Buffer[2]) == 0xFF) && \
-                           ((Buffer[1] ^ Buffer[3]) == 0xFF)){
-                        crcflash = ((((uint16_t)Buffer[0]) << 8) | Buffer[1]);
-                        uart_tx(ACK);
-                    }
-                    else
-                        uart_tx(NACK);
-                }
-                else if(Buffer[0] == EOT){
-                    TIMER_RST();
-                    TIMER_ON(); // waits 1 sec for confirmation of EOT
-                    uart_tx(ACK);
-                }
-                else
-                    uart_tx(NACK);
-            }
+    TIM_DIS(); //Timer Disable
+    TFLAGRST(); //Timer flag reset (to default state)
+//}}}
 
-            if(TIMER_OVR()){
-                TFLAGRST();
-                Tcounter--;
+    while(Tcounter){
+        opt=uart_rx();
+        //Flash and EEPROM read routine{{{
+        if((opt==F_RD) || (opt==E_RD)){
+            if(receive_block(Buffer, SHORTBUFS)){
+                if(opt==F_RD)
+                    flash_buff_load(Buffer, PAGBT);
+                else{
+                     eeprom_read_block(Buffer, (const void*)PAGWD, SPM_PAGESIZE);
+                     eeprom_busy_wait();
+                }
+                crc=crc16_calc(INITVAL, MASKBUFF, SPM_PAGESIZE, Buffer);
+                Buffer[SPM_PAGESIZE]=((uint8_t)(crc>>8));
+                Buffer[SPM_PAGESIZE+1]=((uint8_t)crc);
+                send_block(Buffer, (BUFFSIZE-PAGSIZE));
             }
         }
-        TIMER_OFF();
-        TIMER_RST();
-        boot_rww_enable();
-        boot_spm_busy_wait();
-        crc = INITVAL;
-        for(j=PagNm;j>0;j-=SPM_PAGESIZE){
-            for(i=SPM_PAGESIZE;i>0;i--)
-                Buffer[SPM_PAGESIZE-i]=pgm_read_byte((PagNm-j) + (SPM_PAGESIZE-i));
-            crc = crc16_calc(crc, MASKFLASH, SPM_PAGESIZE, Buffer);
+        //}}}
+        //Flash write routine{{{
+        else if(opt==F_WR){
+            if(receive_block(Buffer, BUFFSIZE)){
+                boot_page_erase(PAGWD);
+                boot_spm_busy_wait();
+                for(i=SPM_PAGESIZE;i>0;i-=2)
+                    boot_page_fill(SPM_PAGESIZE-i, ((Buffer[SPM_PAGESIZE-i+3]<<8) | Buffer[SPM_PAGESIZE-i+2]));
+                boot_page_write(PAGWD);
+                boot_spm_busy_wait();
+                uart_tx(ACK);
+            }
         }
-        /*Read flash an calculate crc*/
-        if(crcflash == crc){
-            eeprom_update_byte(PFLAGADD, PRGOK);
-            eeprom_busy_wait();
+        //}}}
+        //Flash and EEPROM verification routine{{{
+        else if((opt==F_VR) || (opt==E_VR)){
+            crc=INITVAL;
+            if(receive_block(Buffer, SHORTBUFS)){//##
+                for(i=PAGBT;i>0;i--){
+                    if(opt==F_VR)
+                        flash_buff_load(Buffer, PAGBT-i);
+                    else{
+                         eeprom_read_block(Buffer, (const void*)PAGWD, SPM_PAGESIZE);
+                         eeprom_busy_wait();
+                    }
+                    crc=crc16_calc(crc, MASKFLASH, SPM_PAGESIZE, Buffer);
+                }
+            }
+            uart_tx((uint8_t)(crc>>8));
+            uart_tx((uint8_t)crc);
+            uart_tx((uint8_t)((~crc)>>8));
+            uart_tx((uint8_t)(~crc));
         }
+        //}}}
+        //Flash clear routine{{{
+        else if(opt==F_CL){
+            for(i=MAXPAGE;i>0;i--){
+                boot_page_erase((uint16_t)((MAXPAGE-i)<<7));
+                boot_spm_busy_wait();
+            }
+                uart_tx(ACK);
+        }
+        //}}}
+        //EEPROM write routine{{{
+        else if(opt==E_WR){
+            if(receive_block(Buffer, BUFFSIZE)){
+                eeprom_update_block(Buffer, (void*)PAGWD, SPM_PAGESIZE);
+                eeprom_busy_wait();
+                uart_tx(ACK);
+            }
+        }
+        //}}}
+        //EEPROM clear routine{{{
+        else if(opt==E_CL){
+            for(j=(E2END+1);j>0;j--){
+                 eeprom_update_byte((uint8_t*)(E2END+1-j),0xFF);
+                 eeprom_busy_wait();
+            }
+            uart_tx(ACK);
+        }
+        //}}}
+        //Write to flash memory, data changes{{{
+        else if(opt==X_CH){
+            boot_rww_enable();
+            uart_tx(ACK);
+        }
+        //}}}
+        //Quit bootloader{{{
+        else if(opt==Q_BL){
+            uart_tx(ACK);
+            Tcounter = 0;
+        }
+        //}}}
+        //Other cases (default){{{
+        else{
+            uart_tx(NACK);
+        }
+        //}}}
     }
-    TFLAGRST();
-    Buffer[0] = eeprom_read_byte(PFLAGADD);
-    uart_tx(Buffer[0]);
-    while(!TxFree()){} //wait for uart to complete transmission
-    UARTOFF();
-    if(Buffer[0] == PRGOK)
-        runapp();
-    for(;;){}
+    UART_DIS(); //UART Disable
+    runapp(); //jump to application
+    for(;;); //infinite for loop
 }
+//}}}
 
+//__jmain: device stack initialization{{{
 void __jmain(void){
     asm volatile ("clr __zero_reg__");
     asm volatile ("out %0,__zero_reg__" :: "i" (AVR_STATUS_ADDR));
@@ -143,13 +153,65 @@ void __jmain(void){
     asm volatile ("out %0,r28" :: "i" (AVR_STACK_POINTER_LO_ADDR));
     asm volatile ("rjmp main");
 }
+//}}}
 
+//uart_tx: data transmission{{{
 void uart_tx(uint8_t data){
-    while(!TxFree());
+    while(!FREE_TX());
     UDR = data;
 }
+//}}}
 
-uint8_t uart_rx(void){
-    while(!DataOnRx());
+//uart_rx: data reception{{{
+inline uint8_t uart_rx(void){
+    while(!DATA_RX());
     return UDR;
 }
+//}}}
+
+//flash_buff_load: load the buffer with data from flash memory{{{
+void flash_buff_load(uint8_t *buff, uint8_t PagNm){
+#if (SPM_PAGESIZE > 255)
+    uint16_t i;
+#else
+    uint8_t i;
+#endif
+
+    for(i=SPM_PAGESIZE;i>0;i--)
+            *(buff+SPM_PAGESIZE-i)=pgm_read_byte((uint16_t)(PagNm<<SPM_LOG2)+SPM_PAGESIZE-i);
+}
+//}}}
+
+//send_block: transmit a block of data{{{
+#if (BUFFSIZE > 255)
+inline void send_block(uint8_t *buff, uint16_t size){
+    uint16_t i;
+#else
+inline void send_block(uint8_t *buff, uint8_t size){
+    uint8_t i;
+#endif
+
+    for(i=size;i>0;i--){
+        uart_tx(*(buff+size-i));
+    }
+}
+//}}}
+
+//receive_block: receice a block of data{{{
+#if (BUFFSIZE >255)
+uint8_t receive_block(uint8_t *buff, uint16_t size){
+#else
+uint8_t receive_block(uint8_t *buff, uint8_t size){
+#endif
+    uint16_t i;
+
+    for(i=size;i>0;i--)
+        *(buff+size-i)=uart_rx();
+    i=crc16_calc(INITVAL, MASKBUFF, (size-CRCSIZE), buff);
+    if(i==((*(buff+size-CRCSIZE)<<8) | *(buff+size-CRCSIZE+1)))
+       return 1;
+    uart_tx(NACK);
+    return 0;
+}
+//}}}
+

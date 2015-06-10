@@ -22,27 +22,21 @@
 ####################################################
 
 
-##### This Makefile will make compiling Atmel AVR
-##### micro controller projects simple with Linux
-##### or other Unix workstations and the AVR-GCC
+##### This Makefile will make compiling Atmel AVR 
+##### micro controller projects simple with Linux 
+##### or other Unix workstations and the AVR-GCC 
 ##### tools.
 #####
 ##### It supports C, C++ and Assembly source files.
 #####
 ##### Customize the values as indicated below and :
 ##### make
-##### make disasm
-##### make stats
-##### make size
+##### make disasm 
+##### make stats 
 ##### make hex
-##### make readflash
-##### make readeeprom
 ##### make writeflash
-##### make writeeeprom
-##### make fuses
 ##### make gdbinit
-##### make clean
-##### make cleanall
+##### or make clean
 #####
 ##### See the http://electrons.psychogenic.com/ 
 ##### website for detailed instructions
@@ -132,7 +126,7 @@ AVRDUDE_PORT=usb
 ##### Start in memory (Bytewise)               #####
 ####################################################
 BLSTART=0x7C00
-
+VERSION=0x7FF5
 ####################################################
 #####                Config Done               #####
 #####                                          #####
@@ -176,7 +170,7 @@ LDFLAGS=-Wl,-Map,$(TRG).map \
 	-nostartfiles \
 	-Wl,--relax,--gc-sections \
 	-Wl,--section-start=.text=$(BLSTART) \
-	#-Wl,--section-start=.version=$(VERSION) \
+	-Wl,--section-start=.version=$(VERSION) \
 	-Wl,--undefined=BootloaderVersion
 
 
@@ -187,8 +181,6 @@ OBJDUMP=avr-objdump
 SIZE=avr-size
 AVRDUDE=avrdude
 REMOVE=rm -f
-CAT=cat
-ECHO=echo -n
 
 ##### automatic target names ####
 TRG=$(PROJECTNAME).out
@@ -197,12 +189,8 @@ DUMPTRG=$(PROJECTNAME).s
 HEXROMTRG=$(PROJECTNAME).hex
 HEXFLASHDMP='fdump.hex'
 HEXEEPROMTRG=$(PROJECTNAME).ee.hex
-HEXEEPROMDMP='eedump.hex'
+HEXEEPROMDMP='eedump.ee.hex'
 GDBINITFILE=gdbinit-$(PROJECTNAME)
-HFUSE='h_fuse'
-LFUSE='l_fuse'
-EFUSE='e_fuse'
-FUSES='fuses.txt'
 
 # Define all object files.
 
@@ -267,24 +255,6 @@ writeeeprom: eeprom
 	$(AVRDUDE) -c $(AVRDUDE_PROGRAMMERID) \
 	-p $(PROGRAMMER_MCU) -P $(AVRDUDE_PORT) \
 	-U eeprom:w:$(HEXEEPROMTRG)
-
-fuses:
-	$(AVRDUDE) -c $(AVRDUDE_PROGRAMMERID) \
-	-p $(PROGRAMMER_MCU) -P $(AVRDUDE_PORT) \
-	-U hfuse:r:$(HFUSE):h
-	$(AVRDUDE) -c $(AVRDUDE_PROGRAMMERID) \
-	-p $(PROGRAMMER_MCU) -P $(AVRDUDE_PORT) \
-	-U lfuse:r:$(LFUSE):h
-	$(AVRDUDE) -c $(AVRDUDE_PROGRAMMERID) \
-	-p $(PROGRAMMER_MCU) -P $(AVRDUDE_PORT) \
-	-U efuse:r:$(EFUSE):h
-	$(ECHO) "H: "> $(FUSES)
-	$(CAT) $(HFUSE) >> $(FUSES)
-	$(ECHO) "L: ">> $(FUSES)
-	$(CAT) $(LFUSE) >> $(FUSES)
-	$(ECHO) "E: ">> $(FUSES)
-	$(CAT) $(EFUSE) >> $(FUSES)
-	$(REMOVE) $(HFUSE) $(LFUSE) $(EFUSE)
 
 install: writeflash
 
@@ -353,16 +323,6 @@ clean:
 	$(REMOVE) $(GENASMFILES)
 	$(REMOVE) $(HEXROMTRG)
 	$(REMOVE) $(HEXEEPROMTRG)
-
-cleanall:
-	$(REMOVE) $(TRG) $(TRG).map $(DUMPTRG)
-	$(REMOVE) $(OBJDEPS)
-	$(REMOVE) $(LST) $(GDBINITFILE)
-	$(REMOVE) $(GENASMFILES)
-	$(REMOVE) $(HEXROMTRG)
-	$(REMOVE) $(HEXEEPROMTRG)
-	$(REMOVE) $(HEXEEPROMDMP)
-	$(REMOVE) $(HEXFLASHDMP)
-	$(REMOVE) $(FUSES)
+	
 #####                    EOF                   #####
 

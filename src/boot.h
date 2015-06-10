@@ -1,47 +1,53 @@
 #ifndef BOOT_H
-#define BOOT_H 1
+#define BOOT_H
 
-//Include
+//Include libraries needed{{{
 #include <avr/io.h>
 #include <avr/boot.h>
-#include <avr/eeprom.h>
 #include <avr/pgmspace.h>
-#include "crc16.h"
+#include <avr/eeprom.h>
+#include "crc16.h" //lib. for crc of 16 calculation
+#include "config.h"
+//}}}
 
-//Configuration of Bootloader
-//Definition of F_CPU
-#ifndef F_CPU
-#define F_CPU       8000000UL   //CPU Frequency
-#endif
-#define BAUD        19200UL     // Baud Rate
-#include <util/setbaud.h>
-#define PROGSTART   0x0000UL    //Application start address (bytewise)
-#define BOOTSTART   0x7C00UL    //Bootloader start address (bytewise)
-#define PFLAGADD    E2END       //Address of flag to check the integrity of data in flash
+//Bootloader version definition{{{
+#define VERSION         "v1.0"
+const uint8_t BootloaderVersion[] PROGMEM = {VERSION}; //Intended to be send at initialization but
+                                            //not enough memory
+//}}}
 
-////Definition of Baud Error Calculation
-//*** Deprecated, replaced with util/setbaud.h
-//#define UBRRVALUE (((F_CPU >> 4) / BAUD) - 1UL)
-//#define BAUDERROR (((F_CPU >> 4) / (UBRRVALUE + 1UL) * 100UL) / BAUD)
-//#if ((BAUDERROR<98) || (BAUDERROR>102))
-//#error "UART error over 2%!"
-//#endif
-#define UBRRV_L (UBRR_VALUE & 0xFF)
-#define UBRRV_H (UBRR_VALUE >> 8)
+//Definition of Program Addresses{{{
+#define NBITS2(n)   ((n&2)?1:0)
+#define NBITS4(n)   ((n&(0xC))?(2+NBITS2(n>>2)):(NBITS2(n)))
+#define NBITS8(n)   ((n&0xF0)?(4+NBITS4(n>>4)):(NBITS4(n)))
+#define NBITS16(n)  ((n&0xFF00)?(8+NBITS8(n>>8)):(NBITS8(n)))
+#define NBITS32(n)  ((n&0xFFFF0000)?(16+NBITS16(n>>16)):(NBITS16(n)))
+#define NBITS(n)    (n==0?0:NBITS32(n)+1)
+#define PAGSIZE     1 //Pagewise address for pages
+#define CRCSIZE     2 //16 bits crc
+#define SPM_LOG2    (NBITS(SPM_PAGESIZE)-1) //Is the result of LOG2(SPM_PAGESIZE)
+#define BUFFSIZE    (SPM_PAGESIZE + CRCSIZE + PAGSIZE) //Size of the buffer
+#define SHORTBUFS   (CRCSIZE + PAGSIZE) //Definition of the size for short buff
+#define MAXPAGE     (BOOTSTART / SPM_PAGESIZE) //Max. page of flash app == BOOTSTART
+//}}}
 
-//Definition of Program Addresses (bytewise)
-#define BUFFSIZE    (SPM_PAGESIZE + 4)
-#define MAXPAGE     (BOOTSTART / SPM_PAGESIZE)
+//Definition of transmission constants{{{
+#define F_RD      0x72 //Flash Read ('r') --> One page at a time
+#define F_WR      0x77 //Flash Write ('w') --> One page at a time
+#define F_VR      0x76 //Flash CRC Verification ('v') --> Until specified page (previous)
+#define F_CL      0x63 //Flash Clear ('c') --> Clear all pages
+#define E_RD      0x52 //EEPROM Read ('R') --> One page at a time
+#define E_WR      0x57 //EEPROM Write ('W') --> One page at a time
+#define E_VR      0x56 //EEPROM CRC Verification ('V') --> Until specified page (previous)
+#define E_CL      0x43 //EEPROM Clear ('C') --> CLear all pages
+#define X_CH      0x58 //eXecute flash changes ('X')
+#define Q_BL      0x51 //Quit Bootloader ('Q')
+#define ACK       0x06 //Acknowledge byte
+#define NACK      0x15 //Negative Acknowledge
+//}}}
 
-////Definition of transmission constants
-#define FRAME_1     0x01
-#define FRAME_2     0x12
-#define EOT         0x04
-#define ACK         0x06
-#define NACK        0x15
-
-//Definition crc16 constants
-#define INITVAL     0xFFFF
+//Definition crc16 constants{{{
+#define INITVAL     0xFFFF //Initial value for crc calculations
 #if (SPM_PAGESIZE > 256)
 #define MASKBUFF    0xD745
 #else
@@ -52,52 +58,36 @@
 #else
 #define MASKFLASH   0xD745 //CRC-16F/4.2 /FOR HD=4 when DATA_LENGTH<32751)
 #endif
+//}}}
 
-////Definition of program constatns
-#define PRGOK       0x55
-#define PRGERR      0xFF
-#define OVFLW       ((uint8_t)(F_CPU / 262144UL)) // to obtain around 1 sec overflow
+//Macros definitions{{{
+#define UART_ENA()    (UCSRB |= (1<<TXEN) | (1<<RXEN)) //Enable Uart
+#define UART_DIS()    (UCSRB &= ~((1<<TXEN) | (1<<RXEN))) //Disable Uart
+#define DATA_RX()     (UCSRA & (1<<RXC)) //Check if there is data in rx buffer
+#define FREE_TX()     (UCSRA & (1<<UDRE)) //Check if tx buffer is free
+#define TIM_ENA()     (TCCRB |= ((1<<CS2) | (1<<CS0))) //Enable timer with 1024 preescaler
+#define TIM_DIS()     (TCCRB &= ~((1<<CS2) | (1<<CS0))) //Disable timer
+#define TIM_RST()     (TCNT = 0) //Reset timer count register
+#define TIM_OVR()     (TIFR & (1<<TOV)) //Check if the timer register overflowed
+#define TFLAGRST()    (TIFR |= (1<<TOV)) //Reset timer overflow flag
+#define PAGBT         (Buffer[0]) //Page address pagewise
+#define PAGWD         ((uint16_t)(PAGBT<<SPM_LOG2)) //Multiplies page address pagewise by 128 (=SPM_PAGESIZE = 2^7)
+//}}}
 
-//Register Definition for Customization
-#define UBRRH       UBRR0H
-#define UBRRL       UBRR0L
-#define UCSRB       UCSR0B
-#define UCSRA       UCSR0A
-#define UDRE        UDRE0
-#define TXEN        TXEN0
-#define RXEN        RXEN0
-#define RXC         RXC0
-#define UDR         UDR0
-#define TCCRB       TCCR0B
-#define CS2         CS02
-#define CS1         CS01
-#define CS0         CS00
-#define TCNT        TCNT0
-#define TIFR        TIFR0
-#define TOV         TOV0
-
-//Macro definition
-#define UARTON()    (UCSRB |= (1<<TXEN) | (1<<RXEN))
-#define UARTOFF()   (UCSRB &= ~((1<<TXEN) | (1<<RXEN)))
-#define DataOnRx()  (UCSRA & (1<<RXC))
-#define TxFree()  (UCSRA & (1<<UDRE))
-#define TIMER_ON()  (TCCRB |= ((1<<CS2) | (1<<CS0)))//with 1024 preescaler
-#define TIMER_OFF() (TCCRB &= ~((1<<CS2) | (1<<CS0)))
-#define TIMER_RST() (TCNT = 0)
-#define TIMER_OVR() (TIFR & (1<<TOV))
-#define TFLAGRST()  (TIFR |= (1<<TOV))
-
-//Types definitions
-
-//Functions prototypes
-void __jmain(void) __attribute__ ((naked)) __attribute__ ((section (".init9")));
-void main (void) __attribute__ ((noreturn)) __attribute__ ((OS_main));
-void uart_tx(uint8_t data) __attribute__ ((noinline));
-uint8_t uart_rx(void) __attribute__ ((noinline));
-typedef void (*fncptr)(void);
-
-//Bootloader version definition
-#define VERSION         "v0.1-a3"
-const uint8_t BootloaderVersion[] __attribute__ ((section(".version"),used)) = {VERSION};
+//Functions prototypes{{{
+void __jmain(void) __attribute__ ((naked)) __attribute__ ((section (".init9"))); //device initialization rutine
+void main (void) __attribute__ ((noreturn)) __attribute__ ((OS_main)); //main program
+void uart_tx(uint8_t data) __attribute__ ((noinline)); //function for data transmission over uart
+inline uint8_t uart_rx(void) __attribute__ ((always_inline)); //funtion for data reception over uart
+void flash_buff_load(uint8_t *buff, uint8_t PagNm) __attribute__ ((noinline));  //func. to load data from flash mem.
+#if (BUFFSIZE > 255)
+inline void send_block(uint8_t *buff, uint16_t size) __attribute__ ((always_inline)); //func. to send a block of data
+uint8_t receive_block(uint8_t *buff, uint16_t size) __attribute__ ((noinline)); //func. to receive a block of data
+#else
+inline void send_block(uint8_t *buff, uint8_t size) __attribute__ ((always_inline)); //idem
+uint8_t receive_block(uint8_t *buff, uint8_t) __attribute__ ((noinline)); //idem
+#endif
+typedef void (*fncptr)(void); //jump to application
+//}}}
 
 #endif

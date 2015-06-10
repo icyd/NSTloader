@@ -12,6 +12,7 @@ uint16_t crc16_calc(uint16_t initvalue, uint16_t mask, uint16_t length, uint8_t 
                 crc = (crc >> 1) ^ mask;
             else
                 crc >>= 1;
+            /**(buff+length-i) >>= 1;*/
         }
     }
     return crc;
