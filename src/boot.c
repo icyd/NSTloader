@@ -8,7 +8,12 @@ void main (void){
     uint8_t opt;
     uint16_t crc;
     volatile fncptr runapp = (fncptr)0x0000;
+    uint16_t k;
+#if (MAXPAGE > 255)
     uint16_t j;
+#else
+    uint8_t j;
+#endif
 #if (SPM_PAGESIZE > 255)
     uint16_t i;
 #else
@@ -65,7 +70,7 @@ void main (void){
                 boot_page_erase(PAGWD);
                 boot_spm_busy_wait();
                 for(i=SPM_PAGESIZE;i>0;i-=2)
-                    boot_page_fill(SPM_PAGESIZE-i, ((Buffer[SPM_PAGESIZE-i+3]<<8) | Buffer[SPM_PAGESIZE-i+2]));
+                    boot_page_fill(SPM_PAGESIZE-i, ((Buffer[SPM_PAGESIZE-i+2]<<8) | Buffer[SPM_PAGESIZE-i+1]));
                 boot_page_write(PAGWD);
                 boot_spm_busy_wait();
                 uart_tx(ACK);
@@ -76,11 +81,12 @@ void main (void){
         else if((opt==F_VR) || (opt==E_VR)){
             crc=INITVAL;
             if(receive_block(Buffer, SHORTBUFS)){//##
-                for(i=PAGBT;i>0;i--){
+                i = PAGBT;
+                for(j=i;j>0;j--){
                     if(opt==F_VR)
-                        flash_buff_load(Buffer, PAGBT-i);
+                        flash_buff_load(Buffer, i-j);
                     else{
-                         eeprom_read_block(Buffer, (const void*)PAGWD, SPM_PAGESIZE);
+                         eeprom_read_block(Buffer, (const void*)((i-j)<<SPM_LOG2), SPM_PAGESIZE);
                          eeprom_busy_wait();
                     }
                     crc=crc16_calc(crc, MASKFLASH, SPM_PAGESIZE, Buffer);
@@ -94,8 +100,8 @@ void main (void){
         //}}}
         //Flash clear routine{{{
         else if(opt==F_CL){
-            for(i=MAXPAGE;i>0;i--){
-                boot_page_erase((uint16_t)((MAXPAGE-i)<<7));
+            for(j=MAXPAGE;j>0;j--){
+                boot_page_erase((uint16_t)((MAXPAGE-j)<<7));
                 boot_spm_busy_wait();
             }
                 uart_tx(ACK);
@@ -104,7 +110,7 @@ void main (void){
         //EEPROM write routine{{{
         else if(opt==E_WR){
             if(receive_block(Buffer, BUFFSIZE)){
-                eeprom_update_block(Buffer, (void*)PAGWD, SPM_PAGESIZE);
+                eeprom_update_block(Buffer+1, (void*)PAGWD, SPM_PAGESIZE);
                 eeprom_busy_wait();
                 uart_tx(ACK);
             }
@@ -112,8 +118,8 @@ void main (void){
         //}}}
         //EEPROM clear routine{{{
         else if(opt==E_CL){
-            for(j=(E2END+1);j>0;j--){
-                 eeprom_update_byte((uint8_t*)(E2END+1-j),0xFF);
+            for(k=(E2END+1);k>0;k--){
+                 eeprom_update_byte((uint8_t*)(E2END+1-k),0xFF);
                  eeprom_busy_wait();
             }
             uart_tx(ACK);

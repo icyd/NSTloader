@@ -11,7 +11,7 @@
 //}}}
 
 //Bootloader version definition{{{
-#define VERSION         "v1.0"
+#define VERSION         "v1.0-a1"
 const uint8_t BootloaderVersion[] PROGMEM = {VERSION}; //Intended to be send at initialization but
                                             //not enough memory
 //}}}
