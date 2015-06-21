@@ -112,6 +112,11 @@ the information needed is in the datasheet of the device)
 - Next run the flasher script will all the options required for your
   application
 
+-> Example <-
+A hex file is included in the 'example' folder, this is a simple application
+that will toggle a led connected to the PB1 pin of the device, with a frequency
+of 400 ms. Please use this to test the bootloader
+
 
 ****************************************************************************
 Firmware Copyright (C):
