@@ -54,7 +54,8 @@ void main (void){
                 if(opt==F_RD)
                     flash_buff_load(Buffer, PAGBT);
                 else{
-                     eeprom_read_block(Buffer, (const void*)PAGWD, SPM_PAGESIZE);
+                     eeprom_read_block(Buffer, (const void*)PAGWD, \
+                             SPM_PAGESIZE);
                      eeprom_busy_wait();
                 }
                 crc=crc16_calc(INITVAL, MASKBUFF, SPM_PAGESIZE, Buffer);
@@ -70,7 +71,9 @@ void main (void){
                 boot_page_erase(PAGWD);
                 boot_spm_busy_wait();
                 for(i=SPM_PAGESIZE;i>0;i-=2)
-                    boot_page_fill(SPM_PAGESIZE-i, ((Buffer[SPM_PAGESIZE-i+2]<<8) | Buffer[SPM_PAGESIZE-i+1]));
+                    boot_page_fill(SPM_PAGESIZE-i, \
+                            ((Buffer[SPM_PAGESIZE-i+2]<<8) | \
+                             Buffer[SPM_PAGESIZE-i+1]));
                 boot_page_write(PAGWD);
                 boot_spm_busy_wait();
                 uart_tx(ACK);
@@ -86,7 +89,8 @@ void main (void){
                     if(opt==F_VR)
                         flash_buff_load(Buffer, i-j);
                     else{
-                         eeprom_read_block(Buffer, (const void*)((i-j)<<SPM_LOG2), SPM_PAGESIZE);
+                         eeprom_read_block(Buffer, \
+                                 (const void*)((i-j)<<SPM_LOG2), SPM_PAGESIZE);
                          eeprom_busy_wait();
                     }
                     crc=crc16_calc(crc, MASKFLASH, SPM_PAGESIZE, Buffer);
@@ -184,7 +188,8 @@ void flash_buff_load(uint8_t *buff, uint8_t PagNm){
 #endif
 
     for(i=SPM_PAGESIZE;i>0;i--)
-            *(buff+SPM_PAGESIZE-i)=pgm_read_byte((uint16_t)(PagNm<<SPM_LOG2)+SPM_PAGESIZE-i);
+            *(buff+SPM_PAGESIZE-i)=pgm_read_byte((uint16_t) \
+                    (PagNm<<SPM_LOG2)+SPM_PAGESIZE-i);
 }
 //}}}
 
