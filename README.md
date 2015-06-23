@@ -1,9 +1,7 @@
-###############################################################################
-###        NSTloader - Not-So-Tiny-bootloader programmed in C with          ###
-###                python tools, for AVR microcontrollers                   ###
-###############################################################################
+#NSTloader - Not-So-Tiny-bootloader
+##Programmed in C with python tools, for AVR microcontrollers
 
-This bootloader is based on the AVR109 application note, using UART serial
+This bootloader is based on the _AVR109_ application note, using UART serial
 protocol communication, to flash data to the microcontroller.
 
 Before any attempt of communication with the microcontroller could be
@@ -12,7 +10,7 @@ SPM_SIZE, FLASHEND and EEPROM should be added to the database (avr.db)
 included with the flashing tools, using the avrdb.py script. All this
 information should be checked within the datasheet of the device.
 
--> Protocol description <-
+###Protocol description
 When a RESET of the microcontroller is perform, it will send a 3 bit string,
 containing the signature bytes of the device; to enter into the bootloader
 program, a ACK (0x06) byte should be replied. If there no is valid reply within
@@ -79,11 +77,11 @@ This will simply quit the bootloader application and reply with a ACK.
 * All other bytes sent to the device will result in a NACK reply. This could be
 used to detect that the bootloader is still active.
 
-*NOTE: Please take into consideration that the commands to
+*NOTE:* Please take into consideration that the commands to
 read/write/verify/clear for the flash memory, are similar to the EEPROM
 commands, but the first ones are lowercase.
 
-*NOTE: when refering to the page address index, is the result of performing
+*NOTE:* When refering to the page address index, is the result of performing
 a division of the bytewise page address, between the SPM_SIZE
 (PAGE ADDRESS / SPM_SIZE or PAGEADDRESS>>LOG2(SPM_SIZE)).
 
@@ -91,17 +89,17 @@ The CRC calculation varies in function of the data length, using the best
 mask for that length and a initial value of 0xFFFF.
 More information avalaible on: http://users.ece.cmu.edu/~koopman/crc/
 
--> Install bootloader <-
+###Install bootloader
 - Go to src folder
 - Modify the 'Makefile' file with the data required for your device and flasher
 - Perform a 'make' command, this will compile and link the source files
 - Run a 'make hex', this will create a hex file of the bootloader program
 - Next will be 'make install' to burn the hex file into the bootloader section
 of the Flash memory of the device
-*'Makefile' also has othe commands ie. 'make clean', 'make readflash',
-'make readeeprom', 'make cleanall' that could be usefull in some cases
+* _Makefile_ also has other commands ie. 'make clean', 'make readflash',
+'make readeeprom', 'make cleanall' that could be useful in some cases.
 
--> Flashing tool <-
+###Flashing tool
 - Go to tool folder
 - Run the 'avrdb.py' script (python avrdb.py)
 - A menus with the actions that can be perform are diplayed. Check if the
@@ -112,10 +110,10 @@ the information needed is in the datasheet of the device)
 - Next run the flasher script will all the options required for your
   application
 
--> Example <-
+###Example
 A hex file is included in the 'example' folder, this is a simple application
 that will toggle a led connected to the PB1 pin of the device, with a frequency
-of 400 ms. Please use this to test the bootloader
+of 400 ms. Please use this to test the bootloader.
 
 
 ****************************************************************************
