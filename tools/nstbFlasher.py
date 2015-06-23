@@ -16,7 +16,7 @@ fVerify=bytes([0x76])  #Flash CRC Verification ('v') -> Until spec page (prev)
 fClear=bytes([0x63])   #Flash Clear ('c') -> Clear all pages
 eRead=bytes([0x52])    #EEPROM Read ('R') -> One page at a time
 eWrite=bytes([0x57])   #EEPROM Write ('W') -> One page at a time
-eVerify=bytes([0x56])  #EEPROM CRC Verification ('V') -> Until specified page (previous)
+eVerify=bytes([0x56])  #EEPROM CRC Verification ('V') -> Until spec page (prev)
 eClear=bytes([0x43])   #EEPROM Clear ('C') -> CLear all pages
 xChanges=bytes([0x58]) #eXecute flash changes ('X')
 qBoot=bytes([0x51])    #Quit Bootloader ('Q')
@@ -271,8 +271,8 @@ def init_parser():
     parser.add_option('-R', '--reeprom=', help='Read eeprom and dump to file. '
                       'Will be executed before verify.', dest='rEEFile',
                       action='store')
-    parser.add_option('-V', '--veepromfile=', help='Verify eeprom against file '
-                      '(eeprom verify will be executed after write/read '
+    parser.add_option('-V', '--veepromfile=', help='Verify eeprom against file'
+                      ' (eeprom verify will be executed after write/read '
                       'operations)',
     dest='vEEFile', action='store')
     parser.add_option('--veepromcrc=', help='Verify eeprom against crc, a 16 '
