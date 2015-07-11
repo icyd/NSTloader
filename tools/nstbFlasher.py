@@ -1,28 +1,28 @@
 #!/usr/bin/python3.4
-#imports
 import os
 from optparse import OptionParser
 from sys import exit
 from intelhex import IntelHex
 from serial import Serial
 from progressbar import ProgressBar, Bar, Percentage, ETA, FileTransferSpeed
-from avrdb import Avr_micro  #Included custom library
-from crc16 import Crc16_Calc #Included custom library
+from avrdb import Avr_micro   # Included custom library
+from crc16 import Crc16_Calc  # Included custom library
 
-#Constants for communication with bootloader
-fRead=bytes([0x72])    #Flash Read ('r') -> One page at a time
-fWrite=bytes([0x77])   #Flash Write ('w') -> One page at a time
-fVerify=bytes([0x76])  #Flash CRC Verification ('v') -> Until spec page (prev)
-fClear=bytes([0x63])   #Flash Clear ('c') -> Clear all pages
-eRead=bytes([0x52])    #EEPROM Read ('R') -> One page at a time
-eWrite=bytes([0x57])   #EEPROM Write ('W') -> One page at a time
-eVerify=bytes([0x56])  #EEPROM CRC Verification ('V') -> Until spec page (prev)
-eClear=bytes([0x43])   #EEPROM Clear ('C') -> CLear all pages
-xChanges=bytes([0x58]) #eXecute flash changes ('X')
-qBoot=bytes([0x51])    #Quit Bootloader ('Q')
-ack=bytes([0x06])      #Acknowledge byte
-nack=bytes([0x15])     #Negative Acknowledge
-other=bytes([0xFF])
+# Constants for communication with bootloader
+fRead = bytes([0x72])     # Flash Read ('r') -> One page at a time
+fWrite = bytes([0x77])    # Flash Write ('w') -> One page at a time
+fVerify = bytes([0x76])   # Flash CRC Verification ('v') -> Until spec page
+fClear = bytes([0x63])    # Flash Clear ('c') -> Clear all pages
+eRead = bytes([0x52])     # EEPROM Read ('R') -> One page at a time
+eWrite = bytes([0x57])    # EEPROM Write ('W') -> One page at a time
+eVerify = bytes([0x56])   # EEPROM CRC Verification ('V') -> Until spec page
+eClear = bytes([0x43])    # EEPROM Clear ('C') -> CLear all pages
+xChanges = bytes([0x58])  # eXecute flash changes ('X')
+qBoot = bytes([0x51])     # Quit Bootloader ('Q')
+ack = bytes([0x06])       # Acknowledge byte
+nack = bytes([0x15])      # Negative Acknowledge
+other = bytes([0xFF])     # Byte to verify conecction
+
 
 def main():
     """
@@ -31,9 +31,9 @@ def main():
     command. With this tool function of clear, write, read and verify
     could be executed on the flash and eeprom memories.
     """
-    #Starting Communication with device
+    # Starting Communication with device
     (opts, args) = init_parser()
-    micro = Avr_micro(name = opts.mcu.lower())
+    micro = Avr_micro(name=opts.mcu.lower())
     if not micro.load():
         print('Device {} not found in database, create and restart the '
               'program'.format(opts.mcu))
@@ -45,7 +45,7 @@ def main():
               'process\nExiting.'.format(opts.port))
         exit()
     print("Device reset...")
-    serial.dsrdtr=False
+    serial.dsrdtr = False
     try:
         sig = serial.read(size=3)
     except:
@@ -60,7 +60,7 @@ def main():
     if micro.id != sig:
         print(
             'Device id in database (0x{:06X}) and id received (0x{:06X})'
-            ' do not match. Exiting!'.format(micro.id,sig)
+            ' do not match. Exiting!'.format(micro.id, sig)
         )
         serial.close()
         exit()
@@ -87,8 +87,8 @@ def main():
         maskbuff = 0xD745
     else:
         maskbuff = 0xA6BC
-    crcframe = Crc16_Calc(mask = maskbuff)
-    crcflash = Crc16_Calc(mask = maskflash)
+    crcframe = Crc16_Calc(mask=maskbuff)
+    crcflash = Crc16_Calc(mask=maskflash)
     widgets = [Percentage(), ' ', Bar('*'), ' ', ETA(), ' ',
                FileTransferSpeed()]
 
@@ -111,9 +111,9 @@ def main():
         data = openHexFile(opts.wFlashFile, micro.name, micro.boot,
                            micro.spm, serial)
         opts.vFlashFile = opts.wFlashFile
-        crc=crcflash.tablecrc(*data)
+        crc = crcflash.tablecrc(*data)
         maxPage = len(data) // micro.spm
-        prog = ProgressBar(widgets = widgets, maxval=maxPage).start()
+        prog = ProgressBar(widgets=widgets, maxval=maxPage).start()
         for i in range(maxPage):
             buff = genBuffer(i, micro.spm, crcframe, *data)
             buff = bytearray(buff)
@@ -130,10 +130,10 @@ def main():
     if opts.wEEFile:
         data = openHexFile(opts.wEEFile, micro.name, 1+micro.eeprom,
                            micro.spm, serial)
-        crc=crcflash.tablecrc(*data)
+        crc = crcflash.tablecrc(*data)
         opts.vEEFile = opts.wEEFile
         maxPage = len(data) // micro.spm
-        prog = ProgressBar(widgets = widgets, maxval=maxPage).start()
+        prog = ProgressBar(widgets=widgets, maxval=maxPage).start()
         for i in range(maxPage):
             buff = genBuffer(i, micro.spm, crcframe, *data)
             buff = bytearray(buff)
@@ -146,12 +146,12 @@ def main():
         maxPage = micro.boot // micro.spm
         ih = IntelHex()
         ans = []
-        prog = ProgressBar(widgets = widgets, maxval=maxPage).start()
+        prog = ProgressBar(widgets=widgets, maxval=maxPage).start()
         for i in range(maxPage):
-            buff=[]
+            buff = []
             buff.append(i)
             crc = crcframe.tablecrc(*buff)
-            buff.append((crc>>8) & 0xFF)
+            buff.append((crc >> 8) & 0xFF)
             buff.append(crc & 0xFF)
             buff = bytearray(buff)
             if checkConex((micro.spm + 2), fRead, serial, buff, ans, crcframe):
@@ -166,12 +166,12 @@ def main():
         maxPage = (micro.eeprom+1) // micro.spm
         ih = IntelHex()
         ans = []
-        prog = ProgressBar(widgets = widgets, maxval=maxPage).start()
+        prog = ProgressBar(widgets=widgets, maxval=maxPage).start()
         for i in range(maxPage):
-            buff=[]
+            buff = []
             buff.append(i)
             crc = crcframe.tablecrc(*buff)
-            buff.append((crc>>8) & 0xFF)
+            buff.append((crc >> 8) & 0xFF)
             buff.append(crc & 0xFF)
             buff = bytearray(buff)
             if checkConex((micro.spm + 2), eRead, serial, buff, ans, crcframe):
@@ -184,17 +184,17 @@ def main():
 
     if opts.vFlashFile or opts.vFlashCRC:
         if opts.vFlashFile:
-            data=openHexFile(opts.vFlashFile, micro.name, micro.boot,
-                             micro.spm, serial)
+            data = openHexFile(opts.vFlashFile, micro.name, micro.boot,
+                               micro.spm, serial)
             maxPage = len(data) // micro.spm
             crc = crcflash.tablecrc(*data)
         else:
-            crc=opts.vFlashCRC
+            crc = opts.vFlashCRC
             maxPage = micro.boot // micro.spm
         buff = []
         buff.append(maxPage)
         crcbuffer = crcframe.tablecrc(*buff)
-        buff.append((crcbuffer>>8) & 0xFF)
+        buff.append((crcbuffer >> 8) & 0xFF)
         buff.append(crcbuffer & 0xFF)
         buff = bytearray(buff)
         print('Flash Verify: ', end='')
@@ -206,7 +206,7 @@ def main():
     if opts.vEEFile or opts.vEECRC:
         if opts.vEEFile:
             data = openHexFile(opts.vEEFile, micro.name, 1+micro.eeprom,
-                             micro.spm, serial)
+                               micro.spm, serial)
             maxPage = len(data) // micro.spm
             crc = crcflash.tablecrc(*data)
         else:
@@ -215,7 +215,7 @@ def main():
         buff = []
         buff.append(maxPage)
         crcbuffer = crcframe.tablecrc(*buff)
-        buff.append((crcbuffer>>8) & 0xFF)
+        buff.append((crcbuffer >> 8) & 0xFF)
         buff.append(crcbuffer & 0xFF)
         buff = bytearray(buff)
         print('EEPROM verify: ', end='')
@@ -228,6 +228,7 @@ def main():
     print('DONE!. Exting')
     serial.close()
     exit()
+
 
 def init_parser():
     """
@@ -274,7 +275,7 @@ def init_parser():
     parser.add_option('-V', '--veepromfile=', help='Verify eeprom against file'
                       ' (eeprom verify will be executed after write/read '
                       'operations)',
-    dest='vEEFile', action='store')
+                      dest='vEEFile', action='store')
     parser.add_option('--veepromcrc=', help='Verify eeprom against crc, a 16 '
                       'bit number is required (if crc is given file will be '
                       'ignored)', dest='vEECRC', action='store', type='int')
@@ -288,70 +289,71 @@ def init_parser():
         opts.vFlashFile = None
     if opts.vEECRC is not None:
         opts.vEEFile = None
-    fileError=False
+    fileError = False
     if (opts.wFlashFile is not None):
         if os.path.exists(opts.wFlashFile) is False:
             print('File {} does not exist!'.format(opts.wFlashFile))
-            fileError=True
+            fileError = True
         elif not os.access(opts.wFlashFile, os.R_OK):
             print('File {} is not readable, check permissions!'
                   .format(opts.wFlashFile))
-            fileError=True
+            fileError = True
     if (opts.rFlashFile is not None):
         if ((os.path.exists(opts.rFlashFile) is False) and
            (os.access(os.getcwd(), os.W_OK) is False)):
             print('File {} does not exist and directory is not writeable!'
                   .format(opts.rFlashFile))
-            fileError=True
+            fileError = True
         elif ((os.path.exists(opts.rFlashFile) and
                (os.access(opts.rFlashFile, os.W_OK) is False))):
             print('File {} is not writable, check permissions!'
                   .format(opts.rFlashFile))
-            fileError=True
+            fileError = True
     if (opts.vFlashFile is not None):
         if os.path.exists(opts.vFlashFile) is False:
             print('File {} does not exist!'.format(opts.vFlashFile))
-            fileError=True
+            fileError = True
         elif not os.access(opts.vFlashFile, os.R_OK):
             print('File {} is not readable, check permissions!'
                   .format(opts.vFlashFile))
-            fileError=True
+            fileError = True
     if (opts.vFlashCRC is not None):
         opts.vFlashCRC = opts.vFlashCRC & 0xFFFF
         opts.vFlashFile = None
     if (opts.wEEFile is not None):
         if (os.path.exists(opts.wEEFile) is False):
             print('File {} does not exist!'.format(opts.wEEFile))
-            fileError=True
+            fileError = True
         elif (os.access(opts.wEEFile, os.R_OK) is False):
             print('File {} is not readable, check permissions!'
                   .format(opts.wEEFile))
-            fileError=True
+            fileError = True
     if (opts.rEEFile is not None):
         if ((os.path.exists(opts.rEEFile) is False) and
            (os.access(os.getcwd(), os.W_OK) is False)):
             print('File {} does not exist and directory is not writable!'
                   .format(opts.rEEFile))
-            fileError=True
+            fileError = True
         elif ((os.path.exists(opts.rEEFile)) and
-               (os.access(opts.rEEFile, os.W_OK) is False)):
+              (os.access(opts.rEEFile, os.W_OK) is False)):
             print('File {} is not writeable, check permissions!'
                   .format(opts.rEEFile))
-            fileError=True
+            fileError = True
     if (opts.vEEFile is not None):
         if os.path.exists(opts.vEEFile) is False:
             print('File {} does not exist!'.format(opts.vEEFile))
-            fileError=True
+            fileError = True
         elif not os.access(opts.vEEFile, os.R_OK):
             print('File {} is not readable, check permissions!'
                   .format(opts.vEEFile))
-            fileError=True
+            fileError = True
     if (opts.vEECRC is not None):
         opts.vEECRC = opts.vEECRC & 0xFFFF
         opts.vEEFile = None
     if fileError:
         exit()
     return (opts, args)
+
 
 def checkConex(buffSize, opt, serial, *args):
     """
@@ -365,31 +367,32 @@ def checkConex(buffSize, opt, serial, *args):
     dataOk = False
     while(count):
         serial.write(opt)
-        if ((opt==fWrite) or (opt==eWrite) or (opt==fRead) or
-            (opt==eRead) or (opt==fVerify) or (opt==eVerify)):
+        if ((opt == fWrite) or (opt == eWrite) or (opt == fRead) or
+           (opt == eRead) or (opt == fVerify) or (opt == eVerify)):
             serial.write(args[0])
         ans = serial.read(size=buffSize)
-        if not len(ans):  #When timeout
+        if not len(ans):  # When timeout
             print('Connection lost, exiting!')
             serial.close()
             exit()
         if (len(ans) == 1) and (ans == ack):
             dataOk = True
             break
-        elif (len(ans) == 4) and (ans[0]&ans[2] == 0) and (ans[1]&ans[3] == 0):
-            if (args[1] ^ ((ans[0]<<8) | ans[1]) == 0):
+        elif (len(ans) == 4) and (ans[0] & ans[2] == 0) and \
+             (ans[1] & ans[3] == 0):
+            if (args[1] ^ ((ans[0] << 8) | ans[1]) == 0):
                 dataOk = True
             break
-        elif ((len(ans)>4) and ((opt==fRead) or (opt==eRead))):
-            crcrecv = (ans[len(ans)-2]<<8) | ans[len(ans)-1]
+        elif ((len(ans) > 4) and ((opt == fRead) or (opt == eRead))):
+            crcrecv = (ans[len(ans)-2] << 8) | ans[len(ans)-1]
             ans = [ans[i] for i in range(len(ans)-2)]
             crc = args[2].tablecrc(*ans)
             if (crcrecv ^ crc == 0):
                 args[1].extend(ans)
-                dataOk=True
+                dataOk = True
                 break
         else:
-            print('Answer of the device is incorrect. Attempt {}...' \
+            print('Answer of the device is incorrect. Attempt {}...'
                   .format(4-count))
             count -= 1
     if (count == 0):
@@ -397,6 +400,7 @@ def checkConex(buffSize, opt, serial, *args):
         serial.close()
         exit()
     return dataOk
+
 
 def openHexFile(fileName, microName, bootStart, spmSize, serial):
     """
@@ -412,11 +416,11 @@ def openHexFile(fileName, microName, bootStart, spmSize, serial):
         print('File with incorrect format. Exiting')
         serial.close()
         exit()
-    data=ih.tobinarray()
+    data = ih.tobinarray()
     if (len(data) > bootStart):
         print('The File you are trying to work with is too big for '
               'the device:')
-        print('File size: 0x{:02X} Available space in {}: 0x{:02X}' \
+        print('File size: 0x{:02X} Available space in {}: 0x{:02X}'
               .format(len(ih), microName, bootStart))
         serial.close()
         exit()
@@ -425,6 +429,7 @@ def openHexFile(fileName, microName, bootStart, spmSize, serial):
         for i in range(aux):
             data.append(255)
     return data
+
 
 def genBuffer(pagAdd, spmSize, crcBuff, *data):
     """

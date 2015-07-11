@@ -1,6 +1,7 @@
 import sqlite3
 from sys import exit
 
+
 class Avr_micro:
     """
     Creates a class of microcontroller, containing all the information of the
@@ -20,6 +21,7 @@ class Avr_micro:
         self.file = "avr.db"
         self.con = sqlite3.connect(self.file)
         self.cursor = self.con.cursor()
+
     def check_db(self):
         try:
             self.cursor.execute('''CREATE TABLE uC
@@ -40,42 +42,46 @@ class Avr_micro:
         else:
             print('Creating table and needs to be populated...\n')
             return True
+
     def exist(self):
         self.cursor.execute('SELECT ID FROM '+self.table+' WHERE ID = ? OR \
-                            NAME = ?',(self.id,self.name,))
+                            NAME = ?', (self.id, self.name,))
         if self.cursor.fetchone() is None:
             return False
         else:
             return True
+
     def load(self):
         if self.exist():
             self.cursor.execute('SELECT * FROM '+self.table+' WHERE \
-                                ID = ?',(self.id,))
+                                ID = ?', (self.id,))
             i = self.cursor.fetchone()
             if i is None:
                 self.cursor.execute('SELECT * FROM '+self.table+' \
-                                    WHERE NAME = ?',(self.name,))
+                                    WHERE NAME = ?', (self.name,))
                 i = self.cursor.fetchone()
                 if i is None:
                     return False
             self.id = i[0]
             self.name = i[1]
-            self.spm = i [2]
+            self.spm = i[2]
             self.boot = i[3]
             self.flash = i[4]
             self.eeprom = i[5]
             return True
         else:
             return False
+
     def delet(self):
         if self.exist():
             self.cursor.execute('DELETE FROM '+self.table+' \
-                                WHERE ID = ?',(self.id,))
+                                WHERE ID = ?', (self.id,))
             self.con.commit()
             return True
         else:
             return False
-    def upd(self,s,b,f,e):
+
+    def upd(self, s, b, f, e):
         if self.exist():
             self.spm = s
             self.boot = b
@@ -83,28 +89,31 @@ class Avr_micro:
             self.eeprom = e
             self.cursor.execute('UPDATE '+self.table+' SET SPM_BUFF = ?, \
                                 BOOTSTART = ?, FLASHEND = ?, EEPROM = ? \
-                                WHERE ID = ?',(self.spm, self.boot, self.flash,
-                                               self.eeprom, self.id,))
+                                WHERE ID = ?', (self.spm, self.boot,
+                                                self.flash, self.eeprom,
+                                                self.id,))
             self.con.commit()
             return True
         else:
             return False
-    def create(self,n,s,b,f,e):
+
+    def create(self, n, s, b, f, e):
         if self.exist():
             return False
         else:
             self.name = n
             self.cursor.execute('SELECT NAME FROM '+self.table+' WHERE NAME \
-                                = ?',(self.name,))
+                                = ?', (self.name,))
             if self.cursor.fetchone() is None:
                 self.spm = s
                 self.boot = b
                 self.flash = f
                 self.eeprom = e
                 self.cursor.execute('INSERT INTO '+self.table+' VALUES(?, ?, \
-                                    ?, ?, ?, ?)',(self.id, self.name, self.spm,
-                                                  self.boot, self.flash,
-                                                  self.eeprom,))
+                                    ?, ?, ?, ?)', (self.id, self.name,
+                                                   self.spm, self.boot,
+                                                   self.flash,
+                                                   self.eeprom,))
                 self.con.commit()
                 return True
             else:
@@ -119,7 +128,7 @@ if __name__ == "__main__":
             print("Enter values to create item")
             while True:
                 try:
-                    sig = int(input("Enter signature (ID in HEX): "),16)
+                    sig = int(input("Enter signature (ID in HEX): "), 16)
                 except ValueError:
                     print("Value incorrect")
                 else:
@@ -136,7 +145,7 @@ if __name__ == "__main__":
                 while True:
                     try:
                         boot = int(input("Enter Boot start address (bytewise "
-                                         "in HEX): "),16)
+                                         "in HEX): "), 16)
                     except ValueError:
                         print("Value incorrect")
                     else:
@@ -144,7 +153,7 @@ if __name__ == "__main__":
                 while True:
                     try:
                         flash = int(input("Enter Flash end address (bytewise "
-                                          "in HEX): "),16)
+                                          "in HEX): "), 16)
                     except ValueError:
                         print("Value incorrect")
                     else:
@@ -152,16 +161,16 @@ if __name__ == "__main__":
                 while True:
                     try:
                         eeprom = int(input("Enter EEPROM end address ("
-                                           "bytewise in HEX): "),16)
+                                           "bytewise in HEX): "), 16)
                     except ValueError:
                         print("Value incorrect")
                     else:
                         break
-                if boot + a.bootsize -1 > flash:
+                if boot + a.bootsize - 1 > flash:
                     print("\nBootloader memory space have to be greater than "
                           "1024 bytes")
                     print("if FLASHEND = 0x{:02x} is correct, BOOTSTART should"
-                          " be 0x{:02x}".format(flash,flash-a.bootsize+1))
+                          " be 0x{:02x}".format(flash, flash-a.bootsize+1))
                 elif boot % spm != 0:
                     print("\nBOOTSTART should be a multiplier of SPM_BUFFSIZE")
                 elif (flash + 1) % spm != 0:
@@ -171,7 +180,7 @@ if __name__ == "__main__":
                 else:
                     break
             a.id = sig
-            if a.create(name,spm,boot,flash,eeprom):
+            if a.create(name, spm, boot, flash, eeprom):
                 print("Item created")
             else:
                 print("Item already exist")
@@ -181,13 +190,13 @@ if __name__ == "__main__":
             while True:
                 choice = input("Enter Column (ID or NAME) to update: ").upper()
                 if choice == "ID":
-                    choice2 = int(input("{} (in HEX format) = "\
-                                        .format(choice)),16)
+                    choice2 = int(input("{} (in HEX format) = "
+                                        .format(choice)), 16)
                     break
                 elif choice == "NAME":
                     choice2 = input("{} = ".format(choice))
-                    a.cursor.execute('SELECT ID FROM uC WHERE NAME = ?'\
-                                     ,(choice2,))
+                    a.cursor.execute('SELECT ID FROM uC WHERE NAME = ?',
+                                     (choice2,))
                     b = a.cursor.fetchone()
                     if b is None:
                         choice2 = 0
@@ -213,7 +222,7 @@ if __name__ == "__main__":
                     while True:
                         try:
                             boot = int(input("Enter Boot start address "
-                                             "(bytewise in HEX): "),16)
+                                             "(bytewise in HEX): "), 16)
                         except ValueError:
                             print("Value incorrect")
                         else:
@@ -221,7 +230,7 @@ if __name__ == "__main__":
                     while True:
                         try:
                             flash = int(input("Enter Flash end address "
-                                              "(bytewise in HEX): "),16)
+                                              "(bytewise in HEX): "), 16)
                         except ValueError:
                             print("Value incorrect")
                         else:
@@ -229,16 +238,16 @@ if __name__ == "__main__":
                     while True:
                         try:
                             eeprom = int(input("Enter EEPROM end address "
-                                               "(bytewise in HEX): "),16)
+                                               "(bytewise in HEX): "), 16)
                         except ValueError:
                             print("Value incorrect")
                         else:
                             break
-                    if boot + a.bootsize -1 > flash:
+                    if boot + a.bootsize - 1 > flash:
                         print("\nBootloader memory space have to be greater "
                               "than 1024 bytes")
                         print("if FLASHEND = 0x{:02x} is correct, BOOTSTART "
-                              "should be 0x{:02x}".format(flash, \
+                              "should be 0x{:02x}".format(flash,
                                                           flash-a.bootsize+1))
                     elif boot % spm != 0:
                         print("\nBOOTSTART should be a multiplier of "
@@ -251,7 +260,7 @@ if __name__ == "__main__":
                               "SPM_BUFFSIZE")
                     else:
                         break
-                if a.upd(spm,boot,flash):
+                if a.upd(spm, boot, flash):
                     print("Item modified")
             mode = 0
         elif mode == 3:
@@ -259,13 +268,13 @@ if __name__ == "__main__":
             while True:
                 choice = input("Enter Column (ID or NAME) to Delete: ").upper()
                 if choice == "ID":
-                    choice2 = int(input("{} (in HEX format) = "\
-                                        .format(choice)),16)
+                    choice2 = int(input("{} (in HEX format) = "
+                                        .format(choice)), 16)
                     break
                 elif choice == "NAME":
                     choice2 = input("{} = ".format(choice))
-                    a.cursor.execute('SELECT ID FROM uC WHERE NAME = ?'\
-                                     ,(choice2,))
+                    a.cursor.execute('SELECT ID FROM uC WHERE NAME = ?',
+                                     (choice2,))
                     b = a.cursor.fetchone()
                     if b is None:
                         choice2 = 0
@@ -285,8 +294,8 @@ if __name__ == "__main__":
             print("\nSignature\tName\t\tSPM_SIZE\tBOOTSTART\tFLASHEND\tEEPROM")
             a.cursor.execute("SELECT * FROM uC")
             for i in a.cursor:
-                print("0x{:02x}\t{}\t{}\t\t0x{:02x}\t\t0x{:02x}\t\t0x{:02x}"\
-                      .format(i[0],i[1],i[2],i[3],i[4],i[5]))
+                print("0x{:02x}\t{}\t{}\t\t0x{:02x}\t\t0x{:02x}\t\t0x{:02x}"
+                      .format(i[0], i[1], i[2], i[3], i[4], i[5]))
             print("\n")
             mode = 0
         elif mode == 5:

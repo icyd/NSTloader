@@ -44,7 +44,7 @@
 ##### make clean
 ##### make cleanall
 #####
-##### See the http://electrons.psychogenic.com/ 
+##### See the http://electrons.psychogenic.com/
 ##### website for detailed instructions
 
 
@@ -69,8 +69,8 @@
 #####         Target Specific Details          #####
 #####     Customize these for your project     #####
 
-# Name of target controller 
-# (e.g. 'at90s8515', see the available avr-gcc mmcu 
+# Name of target controller
+# (e.g. 'at90s8515', see the available avr-gcc mmcu
 # options for possible values)
 MCU=atmega328p
 F_CPU=8000000UL
@@ -79,7 +79,7 @@ F_CPU=8000000UL
 # default: PROGRAMMER_MCU=$(MCU)
 # In case the programer used, e.g avrdude, doesn't
 # accept the same MCU name as avr-gcc (for example
-# for ATmega8s, avr-gcc expects 'atmega8' and 
+# for ATmega8s, avr-gcc expects 'atmega8' and
 # avrdude requires 'm8')
 PROGRAMMER_MCU=m328p
 
@@ -100,7 +100,7 @@ INC=
 # libraries to link in (e.g. -lmylib)
 LIBS=
 
-# Optimization level, 
+# Optimization level,
 # use s (size opt), 1, 2, 3 or 0 (off)
 OPTLEVEL=s
 
@@ -116,12 +116,12 @@ OPTLEVEL=s
 # programmer id--check the avrdude for complete list
 # of available opts.  These should include stk500,
 # avr910, avrisp, bsd, pony and more.  Set this to
-# one of the valid "-c PROGRAMMER-ID" values 
+# one of the valid "-c PROGRAMMER-ID" values
 # described in the avrdude info page.
-# 
+#
 AVRDUDE_PROGRAMMERID=usbtiny
 
-# port--serial or parallel port to which your 
+# port--serial or parallel port to which your
 # hardware programmer is attached
 #
 AVRDUDE_PORT=usb
@@ -220,9 +220,9 @@ OBJDEPS=$(CFILES:.c=.o)    \
 # Define all lst files.
 LST=$(filter %.lst, $(OBJDEPS:.o=.lst))
 
-# All the possible generated assembly 
+# All the possible generated assembly
 # files (.s files)
-GENASMFILES=$(filter %.s, $(OBJDEPS:.o=.s)) 
+GENASMFILES=$(filter %.s, $(OBJDEPS:.o=.s))
 
 
 .SUFFIXES : .c .o .out .s .S \
@@ -334,11 +334,9 @@ gdbinit: $(GDBINITFILE)
 
 $(GDBINITFILE): $(TRG)
 	@echo "file $(TRG)" > $(GDBINITFILE)
-	
 	@echo "target remote localhost:1234" \
 		                >> $(GDBINITFILE)
-	
-	@echo "load"        >> $(GDBINITFILE) 
+	@echo "load"        >> $(GDBINITFILE)
 	@echo "break main"  >> $(GDBINITFILE)
 	@echo "continue"    >> $(GDBINITFILE)
 	@echo
@@ -365,4 +363,3 @@ cleanall:
 	$(REMOVE) $(HEXFLASHDMP)
 	$(REMOVE) $(FUSES)
 #####                    EOF                   #####
-
