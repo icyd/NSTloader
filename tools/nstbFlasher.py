@@ -43,6 +43,7 @@ def main():
     except:
         print('Port {}, can not been open, check if it is blocked by another '
               'process\nExiting.'.format(opts.port))
+        serial.flushInput()
         exit()
     print("Device reset...")
     serial.dsrdtr = False
@@ -51,6 +52,7 @@ def main():
     except:
         print('Port {} not readable, chech if is blocked by another '
               'process\nExisting.'.format(opts.port))
+        serial.flushInput()
         exit()
     if not len(sig):
         print("Timeout to receive data, exiting!")
@@ -78,6 +80,7 @@ def main():
     else:
         print('Connection with NSTbootloader could not be established')
         serial.close()
+        serial.flushInput()
         exit()
     if (micro.boot > 0x7FFF):
         maskflash = 0xD4D8
@@ -374,6 +377,7 @@ def checkConex(buffSize, opt, serial, *args):
         if not len(ans):  # When timeout
             print('Connection lost, exiting!')
             serial.close()
+            serial.flushInput()
             exit()
         if (len(ans) == 1) and (ans == ack):
             dataOk = True
@@ -398,6 +402,7 @@ def checkConex(buffSize, opt, serial, *args):
     if (count == 0):
         print('Exiting. Error in connection!')
         serial.close()
+        serial.flushInput()
         exit()
     return dataOk
 
@@ -423,6 +428,7 @@ def openHexFile(fileName, microName, bootStart, spmSize, serial):
         print('File size: 0x{:02X} Available space in {}: 0x{:02X}'
               .format(len(ih), microName, bootStart))
         serial.close()
+        serial.flushInput()
         exit()
     if (len(data) % spmSize) != 0:
         aux = spmSize - (len(data) % spmSize)
