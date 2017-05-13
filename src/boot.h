@@ -11,7 +11,7 @@
 //}}}
 
 //Bootloader version definition{{{
-#define VERSION         "v1.1-a1"
+#define VERSION         "v1.1-b1"
 const uint8_t BootloaderVersion[] PROGMEM = {VERSION};
 //}}}
 

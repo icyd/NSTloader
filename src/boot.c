@@ -26,14 +26,11 @@ void main (void) {
     UBRRL = UBRRL_VALUE;
     UART_ENA();
     send_block(Buffer, 3); //Send signature bytes
-    //Send bootloader version info (not enough space)
-    /*for (i = 7; i > 0; i--)*/
-        /*uart_tx(pgm_read_byte(BootloaderVersion[7 - i]));*/
     TIM_ENA();
 //}}}
 
 //Bootloader handshake{{{
-    while (Tcounter) { //Wait 1 sec for reply (ACK) of PC
+    while (Tcounter) { //Wait for PC's reply
         if (TIM_OVR()) {
             TFLAGRST();
             Tcounter--;
@@ -108,7 +105,7 @@ void main (void) {
             for (j = MAXPAGE; j > 0; j--) {
                 boot_page_erase((uint16_t)((MAXPAGE - j) << 7));
                 boot_spm_busy_wait();
-            }
+          }
                 uart_tx(ACK);
         }
         //}}}

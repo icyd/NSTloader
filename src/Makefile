@@ -102,7 +102,7 @@ LIBS=
 
 # Optimization level,
 # use s (size opt), 1, 2, 3 or 0 (off)
-OPTLEVEL=s
+OPTLEVEL=0
 
 
 #####      AVR Dude 'writeflash' options       #####
@@ -119,7 +119,7 @@ OPTLEVEL=s
 # one of the valid "-c PROGRAMMER-ID" values
 # described in the avrdude info page.
 #
-AVRDUDE_PROGRAMMERID=usbtiny
+AVRDUDE_PROGRAMMERID=atmelice_isp
 
 # port--serial or parallel port to which your
 # hardware programmer is attached
@@ -150,8 +150,8 @@ BLSTART=0x7C00
 HEXFORMAT=ihex
 
 # compiler
-CFLAGS=-I. $(INC) -g -mmcu=$(MCU) -O$(OPTLEVEL) \
-	-std=gnu99 -D F_CPU=$(F_CPU) -gdwarf-2 \
+CFLAGS=-I. $(INC) -g2 -gstabs -mmcu=$(MCU) -O$(OPTLEVEL) \
+	-std=gnu99 -D F_CPU=$(F_CPU) \
 	-fpack-struct -fshort-enums \
 	-funsigned-bitfields -funsigned-char \
 	-Wall -Werror -Wshadow -Wundef -Winline \
@@ -164,7 +164,7 @@ CFLAGS=-I. $(INC) -g -mmcu=$(MCU) -O$(OPTLEVEL) \
 
 
 # assembler
-ASMFLAGS =-I. $(INC) -mmcu=$(MCU)        \
+ASMFLAGS =-I. $(INC) -g2 -mmcu=$(MCU)        \
 	-x assembler-with-cpp            \
 	-Wa,-gstabs,-ahlms=$(firstword   \
 		$(<:.S=.lst) $(<.s=.lst))
@@ -173,11 +173,9 @@ ASMFLAGS =-I. $(INC) -mmcu=$(MCU)        \
 # linker
 LDFLAGS=-Wl,-Map,$(TRG).map \
 	-mmcu=$(MCU) -lm $(LIBS) \
-	-nostartfiles \
+	-g -gstabs -nostartfiles \
 	-Wl,--relax,--gc-sections \
-	-Wl,--section-start=.text=$(BLSTART) \
-	#-Wl,--section-start=.version=$(VERSION) \
-	-Wl,--undefined=BootloaderVersion
+	-Wl,--section-start=.text=$(BLSTART)
 
 
 ##### executables ####
@@ -191,7 +189,7 @@ CAT=cat
 ECHO=echo -n
 
 ##### automatic target names ####
-TRG=$(PROJECTNAME).out
+TRG=$(PROJECTNAME).elf
 DUMPTRG=$(PROJECTNAME).s
 
 HEXROMTRG=$(PROJECTNAME).hex
@@ -241,7 +239,7 @@ stats: $(TRG)
 	$(OBJDUMP) -h $(TRG)
 	$(SIZE) $(TRG)
 
-size: clean $(TRG)
+size:  $(TRG)
 	$(SIZE) $(TRG)
 
 hex: $(HEXROMTRG)

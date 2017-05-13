@@ -15,7 +15,7 @@
 //}}}
 
 //Definition of the delay to start application
-#define OVFLW       ((uint8_t)(F_CPU / 262144UL)) //Value neccesary to obtain around 1 sec overflow
+#define OVFLW       ((uint8_t)(2 * F_CPU / 262144UL)) //Value neccesary to obtain around 2 sec overflow
 
 //Register Definition for Customization of device{{{
 #define UBRRH       UBRR0H
