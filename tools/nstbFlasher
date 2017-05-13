@@ -1,4 +1,4 @@
-#!/usr/bin/python3.4
+#!/usr/bin/python3
 import os
 from optparse import OptionParser
 from sys import exit
@@ -33,7 +33,9 @@ def main():
     """
     # Starting Communication with device
     (opts, args) = init_parser()
-    micro = Avr_micro(name=opts.mcu.lower())
+    if (opts.dbFile is None):
+        opts.dbFile = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'avr.db')
+    micro = Avr_micro(dbfile=opts.dbFile, name=opts.mcu.lower())
     if not micro.load():
         print('Device {} not found in database, create and restart the '
               'program'.format(opts.mcu))
@@ -282,6 +284,9 @@ def init_parser():
     parser.add_option('--veepromcrc=', help='Verify eeprom against crc, a 16 '
                       'bit number is required (if crc is given file will be '
                       'ignored)', dest='vEECRC', action='store', type='int')
+    parser.add_option('-f', '--dbfile', help='Path to the database file. '
+                      'If none is given is assumed to be in the same folder '
+                      ' as the script.', dest='dbFile', action='store')
     (opts, args) = parser.parse_args()
     mandatory = ['mcu']
     for m in mandatory:

@@ -1,5 +1,5 @@
-#NSTloader - Not-So-Tiny-bootloader
-##Bootloader for AVR microcontrollers (8-bit architecture)
+# NSTloader - Not-So-Tiny-bootloader
+## Bootloader for AVR microcontrollers (8-bit architecture)
 
 This bootloader is based on the _AVR109_ application note. This programm
 communicates using the UART serial communication protocol, in order to execute
@@ -7,7 +7,7 @@ all the data manipulation required (read, write, verify and clear operations)
 inside the flash and EEPROM memory of the target microcontroller.
 
 
-###Protocol description
+### Protocol description
 
 When the microcontroller detects a flank change on the RESET pin, it will send a
 3 bit string, containing the signature bytes of the device.  In order to enter
@@ -88,7 +88,7 @@ mask for that length and a initial value of 0xFFFF.
 More information avalaible on: http://users.ece.cmu.edu/~koopman/crc/
 
 
-###Install bootloader
+### Install bootloader
 
 - Go to src folder
 - Modify the 'Makefile' file with the data required for your device and
@@ -99,9 +99,11 @@ More information avalaible on: http://users.ece.cmu.edu/~koopman/crc/
 of the Flash memory of the device.
 * _Makefile_ also has other commands ie. 'make clean', 'make readflash', 'make
 readeeprom', 'make cleanall' that could be useful in some cases.
+* Is important to setup the fuses correctly on the device: 
+  - An Boot flash section of at least *1024* words is required
+  - The *Boot Reset Vector* should be enabled
 
-
-###Flashing tool
+### Flashing tool
 
 - Go to tool folder
 - Run the 'avrdb.py' script (python avrdb.py or ./avrdb.py).
@@ -120,7 +122,7 @@ the avrdb.py script. All this information should be checked within the
 datasheet of the device.
 
 
-###Example
+### Example
 
 A hex file is included in the 'example' folder, this is a simple application
 that will toggle a led connected to the PB1 pin of the device, with a frequency
