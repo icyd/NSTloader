@@ -8,8 +8,8 @@ class Avr_micro:
     memories, name and signature. This will be written in a sqlite3 data base
     and access by other script later, to retrieve the information
     """
-    def __init__(self, dbfile='avr.db', id=0, name='foo', spm=256, boot=0xFC00, flash=0xFFFF,
-                 eeprom=0xFFF):
+    def __init__(self, dbfile='avr.db', id=0, name='foo', spm=256, boot=0xFC00,
+                 flash=0xFFFF, eeprom=0xFFF):
         self.id = id
         self.name = name
         self.spm = spm
@@ -118,6 +118,7 @@ class Avr_micro:
                 return True
             else:
                 return False
+
 
 if __name__ == "__main__":
     a = Avr_micro()
